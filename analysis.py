@@ -125,6 +125,7 @@ ax.legend(title="Experimental History")
 ## Ca:SiO2_Si by log(Q)
 # remove outliers from casi_ratio values
 casi_z = casi[~is_outlier(casi['casi_ratio'])]
+casi_z = casi_z[casi_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
 
 # reorder colors for better image
 colors_history = {
@@ -137,19 +138,27 @@ fig, ax = plt.subplots()
 
 ax.set_xlabel('log(Q) L/s', fontsize=16)
 ax.set_ylabel('Ca:SiO2_Si', fontsize=16)
-plt.suptitle('Ca:SiO2_Silica Casi_Ratio by log(Q)', fontsize=16)
+plt.suptitle('Ca:SiO2_Si Ratio by log(Q)', fontsize=16)
 plt.title('points with Z score greater than 3.5 removed', fontsize=10, y=1)
 
 
 for history in colors_history.keys():
     this = casi_z[casi_z['history'] == history]
+    x = this['log_q']
+    y = this['casi_ratio']
+
     color = colors_history[history]
-    ax.scatter(this['log_q'], this['casi_ratio'], c=color, label=history, alpha=0.5)
+    ax.scatter(this['log_q'], this['casi_ratio'], c=color, label=history, alpha=0.25)
+
+    m, b = np.polyfit(x, y, 1)
+    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
+    ax.plot(X_plot, m*X_plot + b, '-', color=color)
 
 ax.legend(title="Experimental History")
 
 #### Calcium and Magnesium
 ## Ca:Mg by Q
+camg_z = camg_z[camg_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
 fig, ax = plt.subplots()
 
 ax.set_xlabel('Discharge (Q) L/s', fontsize=16)
@@ -158,6 +167,9 @@ ax.set_title('Ca:Mg Ratio by Discharge', fontsize=16)
 
 for history in colors_history.keys():
     this = camg[camg['history'] == history]
+    x = this['log_q']
+    y = this['camg_ratio']
+
     color = colors_history[history]
     ax.scatter(this['discharge'], this['camg_ratio'], c=color, label=history, alpha=0.5)
 
@@ -204,6 +216,75 @@ ax.legend(title="Experimental History")
 
 # Ca:Na
 # by Q
+fig, ax = plt.subplots()
+
+ax.set_xlabel('Discharge (Q) L/s', fontsize=16)
+ax.set_ylabel('Ca:Na', fontsize=16)
+ax.set_title('Ca:Na Ratio by Discharge', fontsize=16)
+
+for history in colors_history.keys():
+    this = cana[cana['history'] == history]
+    color = colors_history[history]
+    ax.scatter(this['discharge'], this['cana_ratio'], c=color, label=history, alpha=0.5)
+
+ax.legend(title="Experimental History")
+
+## Ca:Na Ratio by log(Q)
+# remove outliers from cana_ratio values
+cana_z = cana[~is_outlier(cana['cana_ratio'], thresh=3)]
+# or don't
+# cana_z = cana
+
+# reorder colors for better image
+colors_history = {
+    'reference': 'blue',
+    'timber_operation': 'red',
+    'ca_addition': 'orange',
+}
+
+fig, ax = plt.subplots()
+
+ax.set_xlabel('log(Q) L/s', fontsize=16)
+ax.set_ylabel('Ca:Na', fontsize=16)
+plt.suptitle('Ca:Na Ratio by log(Q)', fontsize=16)
+plt.title('points with Z score greater than 3 removed', fontsize=10)
+
+# removing inf values (apparently there are 12?)
+cana = cana[cana.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
+cana_z = cana_z[cana_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
+
+# adding regression lines
+for history in colors_history.keys():
+    this = cana_z[cana_z['history'] == history]
+    x = this['log_q']
+    y = this['cana_ratio']
+
+    # regression stats
+    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+    entry = f'{history}   $r^2$ {r_value:.3f}'
+
+    # scatter
+    color = colors_history[history]
+    ax.scatter(x, y, c=color, label=entry, alpha=0.25)
+
+
+    m, b = np.polyfit(x, y, 1)
+    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
+    ax.plot(X_plot, m*X_plot + b, '-', color=color)
+
+# overall regression
+x = cana_z['log_q']
+y = cana_z['cana_ratio']
+
+gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+entry = f'overall   $r^2$ {r_value:.3f}'
+
+m, b = np.polyfit(x, y, 1)
+X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
+ax.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
+
+ax.legend(title="Experimental History")
 
 
 
