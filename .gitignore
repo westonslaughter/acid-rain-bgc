@@ -1,0 +1,8 @@
+.DS_Store
+.idea
+*.log
+tmp/
+config.json
+spatial/
+macrosheds_dataset_v1/
+*.csv
