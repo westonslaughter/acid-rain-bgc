@@ -14,7 +14,7 @@ import datetime as dt
 
 ## Data Prep
 
-hubbard = pd.read_csv('hbef_elements.csv', index_col=0)
+hubbard = pd.read_csv('hbef_elements_interp.csv', index_col=0)
 
 # hubbard_wide = pd.pivot_table(hubbard,
 #                               index=['datetime', 'year', 'month', 'site_code', 'q', 'ms_status', 'ms_interp'],
@@ -80,42 +80,44 @@ def is_outlier(points, thresh=3.5):
 
     return modified_z_score > thresh
 
-##### Hubbard Element Ratios Dataset Prep
-hbef_elements = hubbard[['datetime', 'year', 'month', 'site_code', 'discharge',
-                         'Ca', 'SiO2_Si', 'Mg', 'Na', 'Cl', 'K']]
-hbef_elements['log_q'] = np.log(hbef_elements['discharge'])
+##### Hubbard Element Ratios Dataset
+# only small data loss from keeping Cl, K
+hbef_ratio = hubbard[['datetime', 'year', 'month', 'site_code', 'q_scaled',
+                            'discharge', 'Ca','Ca_flux', 'SiO2_Si', 'SiO2_Si_flux',  'Mg', 'Mg_flux',
+                            'Na', 'Na_flux', 'Cl', 'Cl_flux', 'K', 'K_flux']].dropna()
 
-# appending site experimental history as categorical variable
+
+# attach experimental history as a categorical variable
 history  = []
-for site in hbef_elements['site_code']:
+for site in hbef_ratio['site_code']:
     history.append(experimental_history[site])
-hbef_elements['history'] = history
+hbef_ratio['history'] = history
 
-# ratio dfs
-casi = hbef_elements[['datetime', 'year', 'month', 'site_code', 'discharge', 'log_q', 'history',
-                      'Ca', 'SiO2_Si']].dropna()
-camg = hbef_elements[['datetime', 'year', 'month', 'site_code', 'discharge', 'log_q', 'history',
-                      'Ca', 'Mg']].dropna()
-cana = hbef_elements[['datetime', 'year', 'month', 'site_code', 'discharge', 'log_q', 'history',
-                      'Ca', 'Na']].dropna()
-# Ca:Si
-casi['casi_ratio'] = (casi['Ca'] / casi['SiO2_Si'])
-# Ca:Mg
-camg['camg_ratio'] = (camg['Ca'] / camg['Mg'])
-# Ca:Na
-cana['cana_ratio'] = (cana['Ca'] / cana['Na'])
+# attach decade as a categorical variable
+def decader(df, yeartype='year'):
+    decade  = []
+    for time in df[yeartype]:
+        if time < 1970:
+            decade.append("1960's")
+        elif time < 1980:
+            decade.append("1970's")
+        elif time < 1990:
+            decade.append("1980's")
+        elif time < 2000:
+            decade.append("1990's")
+        elif time < 2010:
+            decade.append("2000's")
+        elif time < 2020:
+            decade.append("2010's")
+        elif time < 2030:
+            decade.append("2020's")
+    df['decade'] = decade
 
-# outliers and infs removed
-casi_z = casi[~is_outlier(casi['casi_ratio'], thresh=3)]
-casi_z = casi_z[casi_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-camg_z = camg[~is_outlier(camg['camg_ratio'], thresh=3)]
-camg_z = camg_z[camg_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-cana_z = cana[~is_outlier(cana['cana_ratio'], thresh=3)]
-cana_z = cana_z[cana_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
 
-hbef_ratio = hbef_elements[['datetime', 'year', 'month', 'site_code',
-                            'discharge', 'Ca', 'SiO2_Si', 'Mg', 'Na',
-                            'Cl', 'K']].dropna()
+decader(hbef_ratio, 'year')
+
+hbef_ratio['log_q'] = np.log(hbef_ratio['discharge'])
+hbef_ratio['scale_log_q'] = np.log(hbef_ratio['q_scaled'])
 
 # Ca:Si
 hbef_ratio['CaSi'] = (hbef_ratio['Ca'] / hbef_ratio['SiO2_Si'])
@@ -131,11 +133,17 @@ hbef_ratio = hbef_ratio[hbef_ratio.replace([np.inf, -np.inf], np.nan).notnull().
 hbef_ratio['datetime'] = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in hbef_ratio.datetime]
 
 # determine the water year
-hbef_ratio['water_year'] = hbef_ratio.year.where(hbef_ratio.month < 10, hbef_ratio.year + 1)
+hbef_ratio['water_year'] = hbef_ratio.year.where(hbef_ratio.month < 6, hbef_ratio.year + 1)
 
 # annual mean ratios
 hbef_wy = hbef_ratio.groupby(['water_year', 'site_code']).mean()
 hbef_wy = hbef_wy.reset_index()
+
+# add in history
+history  = []
+for site in hbef_wy['site_code']:
+    history.append(experimental_history[site])
+hbef_wy['history'] = history
 
 #  Hubbard
 hbef_exp = hbef_wy[hbef_wy['site_code'].isin(['w2', 'w4', 'w5'])].groupby('water_year').mean().drop('year', 1).reset_index()
@@ -147,448 +155,8 @@ hbef_4 = hbef_wy[hbef_wy['site_code'].isin(['w4'])].groupby('water_year').mean()
 hbef_5 = hbef_wy[hbef_wy['site_code'].isin(['w5'])].groupby('water_year').mean().drop('year', 1).reset_index()
 
 #### Plotting
-
-# Ca by SiO2_Si by History
-fig, ax = plt.subplots()
-
-ax.set_xlabel('SiO2_Si', fontsize=16)
-ax.set_ylabel('Ca', fontsize=16)
-ax.set_title('Ca by SiO2_Si in Hubbard Brook', fontsize=16)
-
-# # history color
-for history in colors_history.keys():
-    this = casi[casi['history'] == history]
-    color = colors_history[history]
-    ax.scatter(this['SiO2_Si'], this['Ca'], c=color, label=history, alpha=0.5)
-#
-# # history marker
-for history in colors_history.keys():
-    this = casi[casi['history'] == history]
-    mark = markers_history[history]
-    ax.scatter(this['SiO2_Si'], this['Ca'], marker=mark, label=history, alpha=0.5)
-
-# years
-years = casi['year'].unique()
-years_col = sns.color_palette("flare", len(years))
-
-# years
-for index, year in enumerate(years):
-    this = casi[casi['year'] == year]
-    color = years_col[index]
-    m = ax.scatter(this['SiO2_Si'], this['Ca'], c=color, label=year, alpha=0.5)
-
-# plt.colorbar(years_col)
-# years + markers
-# for index, year in enumerate(years):
-#     this = casi[casi['year'] == year]
-#     color = years_col[index]
-#     histories = this['history'].unique()
-#     for index, history in enumerate(histories):
-#         this_sub = this[this['history'] == history]
-#         mark = markers_history[history]
-#         ax.scatter(this['SiO2_Si'], this['Ca'], c=color, label=year, marker=mark, alpha=0.5)
-
-# colorscale
-cb = fig.colorbar()
-cb.set_label('Color Scale')
-
-
-ax.legend(title='Experimental History')
-ax.legend(title='Years')
-
-##### Changes in Element Ratios with Flow
-#### Calcium and Silica
-## Ca:SiO2_Si by Q
-fig, ax = plt.subplots()
-
-ax.set_xlabel('Discharge (Q) L/s', fontsize=16)
-ax.set_ylabel('Ca:SiO2_Si', fontsize=16)
-ax.set_title('Ca:SiO2_Si Ratio by Discharge', fontsize=16)
-
-for history in colors_history.keys():
-    this = casi[casi['history'] == history]
-    color = colors_history[history]
-    ax.scatter(this['discharge'], this['casi_ratio'], c=color, label=history, alpha=0.5)
-
-ax.legend(title="Experimental History")
-
-## Ca:SiO2_Si by log(Q)
-# remove outliers from casi_ratio values
-casi_z = casi[~is_outlier(casi['casi_ratio'])]
-casi_z = casi_z[casi_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-
-# reorder colors for better image
-colors_history = {
-    'timber_operation': 'red',
-    'reference': 'blue',
-    'ca_addition': 'orange',
-}
-
-fig, ax = plt.subplots()
-
-ax.set_xlabel('log(Q) L/s', fontsize=16)
-ax.set_ylabel('Ca:SiO2_Si', fontsize=16)
-plt.suptitle('Ca:SiO2_Si Ratio by log(Q)', fontsize=16)
-plt.title('points with Z score greater than 3.5 removed', fontsize=10, y=1)
-
-
-for history in colors_history.keys():
-    this = casi_z[casi_z['history'] == history]
-    x = this['log_q']
-    y = this['casi_ratio']
-     # regression stats
-    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-
-    entry = f'{history}   $r^2$ {r_value:.3f}'
-
-    color = colors_history[history]
-    ax.scatter(this['log_q'], this['casi_ratio'], c=color, label=entry, alpha=0.25)
-
-    m, b = np.polyfit(x, y, 1)
-    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
-    ax.plot(X_plot, m*X_plot + b, '-', color=color)
-
-# overall regression
-x = casi_z['log_q']
-y = casi_z['casi_ratio']
-
-radient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-ntry = f'overall   $r^2$ {r_value:.3f}'
-
-, b = np.polyfit(x, y, 1)
-_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
-x.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
-
-x.legend(title="Experimental History")
-
-#### Calcium and Magnesium
-## Ca:Mg by Q
-
-ig, ax = plt.subplots()
-
-x.set_xlabel('Discharge (Q) L/s', fontsize=16)
-x.set_ylabel('Ca:Mg', fontsize=16)
-x.set_title('Ca:Mg Ratio by Discharge', fontsize=16)
-
-or history in colors_history.keys():
-    this = camg[camg['history'] == history]
-    x = this['log_q']
-    y = this['camg_ratio']
-
-    color = colors_history[history]
-    ax.scatter(this['discharge'], this['camg_ratio'], c=color, label=history, alpha=0.5)
-
-ax.legend(title="Experimental History")
-
-## Ca:Mg Ratio by log(Q)
-# remove outliers from camg_ratio values
-camg_z = camg[~is_outlier(camg['camg_ratio'], thresh=3)]
-camg_z = camg_z[camg_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-# or don't
-# camg_z = camg
-
-# reorder colors for better image
-colors_history = {
-    'reference': 'blue',
-    'timber_operation': 'red',
-    'ca_addition': 'orange',
-}
-
-fig, ax = plt.subplots()
-
-ax.set_xlabel('log(Q) L/s', fontsize=16)
-ax.set_ylabel('Ca:Mg', fontsize=16)
-plt.suptitle('Ca:Mg Ratio by log(Q)', fontsize=16)
-plt.title('points with Z score greater than 3 removed', fontsize=10)
-
-# removing inf values (apparently there are 12?)
-camg = camg[camg.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-camg_z = camg_z[camg_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-
-# adding regression lines
-for history in colors_history.keys():
-    this = camg_z[camg_z['history'] == history]
-    x = this['log_q']
-    y = this['camg_ratio']
-
-    # regression stats
-    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-
-    entry = f'{history}   $r^2$ {r_value:.3f}'
-
-    # scatter
-    color = colors_history[history]
-    ax.scatter(x, y, c=color, label=entry, alpha=0.25)
-
-
-    m, b = np.polyfit(x, y, 1)
-    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
-    ax.plot(X_plot, m*X_plot + b, '-', color=color)
-
-# overall regression
-x = camg_z['log_q']
-y = camg_z['camg_ratio']
-
-gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-entry = f'overall   $r^2$ {r_value:.3f}'
-
-m, b = np.polyfit(x, y, 1)
-X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
-ax.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
-
-ax.legend(title="Experimental History")
-
-
-#### Ca:Na
-# Ca:Na by Q
-fig, ax = plt.subplots()
-
-ax.set_xlabel('Discharge (Q) L/s', fontsize=16)
-ax.set_ylabel('Ca:Na', fontsize=16)
-ax.set_title('Ca:Na Ratio by Discharge', fontsize=16)
-
-for history in colors_history.keys():
-    this = cana[cana['history'] == history]
-    color = colors_history[history]
-    ax.scatter(this['discharge'], this['cana_ratio'], c=color, label=history, alpha=0.5)
-
-ax.legend(title="Experimental History")
-
-## Ca:Na Ratio by log(Q)
-# remove outliers from cana_ratio values
-cana_z = cana[~is_outlier(cana['cana_ratio'], thresh=3)]
-# or don't
-# cana_z = cana
-
-# reorder colors for better image
-colors_history = {
-    'reference': 'blue',
-    'timber_operation': 'red',
-    'ca_addition': 'orange',
-}
-
-fig, ax = plt.subplots()
-
-ax.set_xlabel('log(Q) L/s', fontsize=16)
-ax.set_ylabel('Ca:Na', fontsize=16)
-plt.suptitle('Ca:Na Ratio by log(Q)', fontsize=16)
-plt.title('points with Z score greater than 3 removed', fontsize=10)
-
-# removing inf values (apparently there are 12?)
-cana = cana[cana.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-cana_z = cana_z[cana_z.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
-
-# adding regression lines
-for history in colors_history.keys():
-    this = cana_z[cana_z['history'] == history]
-    x = this['log_q']
-    y = this['cana_ratio']
-
-    # regression stats
-    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-
-    entry = f'{history}   $r^2$ {r_value:.3f}'
-
-    # scatter
-    color = colors_history[history]
-    ax.scatter(x, y, c=color, label=entry, alpha=0.25)
-
-
-    m, b = np.polyfit(x, y, 1)
-    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
-    ax.plot(X_plot, m*X_plot + b, '-', color=color)
-
-# overall regression
-x = cana_z['log_q']
-y = cana_z['cana_ratio']
-
-gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-entry = f'overall   $r^2$ {r_value:.3f}'
-
-m, b = np.polyfit(x, y, 1)
-X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1],100)
-ax.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
-
-ax.legend(title="Experimental History")
-
-#### Facet Grid
-# create decade buckets
-g = sns.FacetGrid(cana_z, col='site_code', hue='site_code', col_wrap=3, )
-g = g.map(plt.plot, 'year', 'Ca')
-# g = g.map(plt.fill_between, 'year', 'Ca', alpha=0.2).set_titles("{col_name}")
-plt.subplots_adjust(top=0.92)
-g = g.fig.suptitle('Calcium Measurements in Hubbard Brook Since 1963')
-
-# Show the graph
-plt.show()
-
-
-#### Ridgelines
-sites = [yr for yr in np.unique(cana['site_code'])]
-palette = sns.color_palette(None, len(sites))
-
-gs = (grid_spec.GridSpec(len(sites), 1))
-fig = plt.figure(figsize=(16, 9))
-
-i = 0
-
-#creating empty list
-ax_objs = []
-
-for site_code in sites:
-    # creating new axes object and appending to ax_objs
-    ax_objs.append(fig.add_subplot(gs[i:i+1, 0:]))
-
-    # plotting the distribution
-    plot = (cana[cana.site_code == site_code]
-            .Ca.plot.kde(ax=ax_objs[-1], color="#f0f0f0", lw=0.5)
-           )
-
-    # grabbing x and y cana from the kde plot
-    x = plot.get_children()[0]._x
-    y = plot.get_children()[0]._y
-
-    # filling the space beneath the distribution
-    ax_objs[-1].fill_between(x,y, color=palette[i])
-
-    # setting uniform x and y lims
-    ax_objs[-1].set_xlim(0, 3)
-    ax_objs[-1].set_ylim(0,2.2)
-
-    i += 1
-
-    # make background transparent
-    rect = ax_objs[-1].patch
-    rect.set_alpha(0)
-
-    # remove borders, axis ticks, and labels
-    ax_objs[-1].set_yticklabels([])
-    ax_objs[-1].set_ylabel('')
-
-    if i == len(sites)-1:
-        pass
-    else:
-        ax_objs[-1].set_xticklabels([])
-
-    spines = ["top","right","left","bottom"]
-    for s in spines:
-        ax_objs[-1].spines[s].set_visible(False)
-
-    site_code = site_code.replace(" ", "\n")
-    ax_objs[-1].text(-0.02,0,site_code,fontweight="bold",fontsize=14,ha="center")
-
-plt.tight_layout()
-plt.show()
-
-# Time Series
-
-# ca = casi['Ca']
-# si = casi['SiO2_Si']
-
-site_colors = {
-    'w1':'#6A3EBB',
-    'w2':'#286477',
-    'w3':'#287746',
-    'w4':'#29447A',
-    'w5':'#2A447A',
-    'w6':'#2A7E57',
-    'w7':'#CD8CD9',
-    'w8':'#BB8CD9',
-    'w9':'#E9D1F0'
-}
-
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=2000))
-
-for site in casi.site_code:
-    ca = casi[casi.site_code == site]['Ca']
-    si = casi[casi.site_code == site]['SiO2_Si']
-    x = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in casi[casi.site_code == site]['datetime']]
-
-    # Ca
-    plt.plot(x, ca, '-', color = site_colors[site])
-    # Si
-    plt.plot(x, si, '--', color = site_colors[site])
-
-plt.gcf().autofmt_xdate()
-
-
-ca = casi[casi.site_code == 'w1']['Ca']
-si = casi[casi.site_code == 'w1']['SiO2_Si']
-casi_ratio =
-x = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in casi[casi.site_code == 'w1']['datetime']]
-# x = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in casi[casi.site_code == site]['datetime']]
-
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=2000))
-
-# Ca
-plt.plot(x, ca, '-', color = site_colors['w1'])
-
-# Si
-plt.plot(x, si, '--', color = site_colors['w1'])
-plt.gcf().autofmt_xdate()
-
-
-
-
-
-
-#  Hubbard
-fig, ax = plt.subplots()
-plt.plot(hbef_ratio['datetime'], hbef_ratio.CaSi, linewidth=0.25, color='orange', alpha=.6)
-plt.plot(hbef_ratio['datetime'], hbef_ratio.CaNa, linewidth=0.25, color='blue', alpha=.6)
-plt.plot(hbef_ratio['datetime'], hbef_ratio.CaMg, linewidth=0.25, color='red', alpha=.6)
-
-fig, ax = plt.subplots()
-
-# Ca:Mg
-plt.plot(hbef_exp['water_year'], hbef_exp.CaMg, linewidth=0.5, linestyle='--', color='red', label='Ca:Mg deforested')
-plt.plot(hbef_6['water_year'], hbef_6.CaMg, linewidth=0.5, color='red', label='Ca:Mg reference')
-
-# Ca:Si
-plt.plot(hbef_6['water_year'], hbef_6.CaSi, linewidth=0.5, color='orange', label='Ca:SiO2-Si')
-plt.plot(hbef_exp['water_year'], hbef_exp.CaSi, linewidth=0.5, linestyle='--', color='orange', label='Ca:SiO2-Si')
-
-# Ca:Na
-plt.plot(hbef_exp['water_year'], hbef_exp.CaNa, linewidth=0.5, linestyle='--', color='blue', label='Ca:Na')
-plt.plot(hbef_6['water_year'], hbef_6.CaNa, linewidth=0.5, color='blue', label='Ca:Na')
-
-# add shaded bar for timber ops
-# ax.fill_between(min(1965), max(1967), alpha=0.5)
-ax.axvspan(1965, 1967, alpha=0.2)
-ax.legend()
-
-
-# Ca
-plt.plot(hbef_exp['water_year'], hbef_exp.Ca, linewidth=0.5, linestyle='--', color='orange', label='Ca deforested')
-plt.plot(hbef_exp['water_year'], hbef_exp.Mg, linewidth=0.5, linestyle='--', color='blue', label='Mg deforested')
-plt.plot(hbef_6['water_year'], hbef_6.Ca, linewidth=0.5, color='red', label='Ca reference')
-
-# Mg
-plt.plot(hbef_6['water_year'], hbef_6.CaMg, linewidth=0.5, color='red', label='Ca:Mg reference')
-plt.plot(hbef_6['water_year'], hbef_6.Mg, linewidth=0.5, color='red', linestyle='--',  label='Mg reference')
-plt.plot(hbef_6['water_year'], hbef_6.Ca, linewidth=0.5, color='orange', linestyle='--',  label='Ca reference')
-
-# all
-fig, ax = plt.subplots()
-
-plt.plot(hbef_6['water_year'], hbef_6.Ca, linewidth=0.5, color='red', label='Ca reference')
-plt.plot(hbef_6['water_year'], hbef_6.Mg, linewidth=0.5, color='blue', label='Mg reference')
-plt.plot(hbef_6['water_year'], hbef_6.Na, linewidth=0.5, color='green', label='Na reference')
-plt.plot(hbef_6['water_year'], hbef_6.K, linewidth=0.5, color='purple', label='K reference')
-plt.plot(hbef_6['water_year'], hbef_6.Cl, linewidth=0.5, color='black', label='Cl reference')
-
-ax.axvspan(1965, 1967, alpha=0.2)
-ax.legend()
-
-# all
-fig, ax = plt.subplots()
-
-
 # Ratio Time Series
-
-def element_plot(element, element_col='red', y_axis_vals=False):
+def element_plot(element, element_name, element_col='red', y_axis_vals=False):
     """
     plot elements, or ratios, whatever owrks- general plot of experimental
     and reference Hubbard watersheds
@@ -603,11 +171,12 @@ def element_plot(element, element_col='red', y_axis_vals=False):
     ax.axvspan(1983, 1984, alpha=0.2, color='#FFD580', label='W5, clearcut and herbicide')
 
     plt.suptitle(f"Hubbard Brook", fontsize=18)
-    plt.title(f"{element} from 1963 to 2020, across three watersheds", fontsize=10)
+    plt.title(f"{element_name} from 1963 to 2020, across three watersheds", fontsize=10)
 
     if y_axis_vals:
         ax.set_ylim(y_axis_vals)
 
+    ax.set_ylabel(f'{element_name}')
     ax.legend()
     plt.show()
 
@@ -642,19 +211,579 @@ def all_element_plot(watershed, name, y_axis_vals=False, with_q=False):
 
 # Elements
 # all element over time, at one site
-all_element_plot(hbef_2, "Watershed 2", y_axis_vals=[0,14], with_q=True)
-all_element_plot(hbef_5, "Watershed 5", y_axis_vals=[0,14], with_q=True)
-all_element_plot(hbef_6, "Watershed 6", y_axis_vals=[0,14], with_q=True)
+all_element_plot(hbef_2, "Watershed 2", with_q=True)
+all_element_plot(hbef_5, "Watershed 5", with_q=True)
+all_element_plot(hbef_6, "Watershed 6", with_q=True)
 
 # element ratios over time, deforested vs reference
-element_plot('CaNa')
-element_plot('CaSi')
-element_plot('CaMg')
+element_plot('CaNa', 'Ca:Na')
+element_plot('CaSi', 'Ca:Si')
+element_plot('CaMg', 'Ca:Mg')
 
 # element concentrations over time, consistent Y max
-element_plot('Ca', y_axis_vals=[0, 8])
-element_plot('SiO2_Si', y_axis_vals=[0, 8])
-element_plot('Mg', y_axis_vals=[0, 8])
-element_plot('Na', y_axis_vals=[0, 8])
+element_plot('Ca', '[Ca]', y_axis_vals=[0, 8])
+element_plot('SiO2_Si', '[SiO2_Si]', y_axis_vals=[0, 8])
+element_plot('Mg', '[Mg]', y_axis_vals=[0, 8])
+element_plot('Na', '[Na]', y_axis_vals=[0, 8])
 
 # Elements by Q
+# Ca by SiO2_Si by History
+def variable_scatter(df, element_x, element_y, var,
+                     log_x=False, log_y=False, regress=False,
+                     title_add=""):
+    fig, ax = plt.subplots()
+
+    x_col = f'{element_x}'
+    df[x_col] = df[element_x]
+    y_col = f'{element_y}'
+    df[y_col] = df[element_y]
+
+    if log_x is True:
+        x_col = f'log_{element_x}'
+        df[x_col] = np.log(df[element_x])
+
+    if log_y is True:
+        y_col = f'log_{element_y}'
+        df[y_col] = np.log(df[element_y])
+
+    ax.set_xlabel(element_x, fontsize=16)
+    ax.set_ylabel(element_y, fontsize=16)
+    ax.set_title(f'{element_x} by {element_y} in Hubbard Brook\n{title_add}', fontsize=16)
+
+    # var
+    if var:
+        var_list = df[var].unique()
+        var_list_col = sns.color_palette("flare", len(var_list))
+
+        # var_list
+        for index, item in enumerate(var_list):
+            this = df[df[var] == item]
+            color = var_list_col[index]
+
+            if regress:
+                x = this[x_col]
+                y = this[y_col]
+
+                # regression stats
+                gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+                entry = f'{item}   $r^2$ {r_value:.3f}'
+                ax.scatter(x, y, c=color, label=entry, alpha=0.25)
+
+                m, b = np.polyfit(x, y, 1)
+                X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
+                ax.plot(X_plot, m*X_plot + b, '-', color=color)
+            else:
+                m = ax.scatter(this[x_col], this[y_col], c=color, label=item, alpha=0.5)
+    else:
+         m = ax.scatter(df[x_col], df[y_col], alpha=0.5)
+
+    if log_x is True:
+        ax.set_xlabel(f'log({element_x})', fontsize=16)
+    if log_y is True:
+        ax.set_ylabel(f'log({element_y})', fontsize=16)
+
+    # overall regression
+    x = df[x_col]
+    y = df[y_col]
+
+    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    entry = f'overall   $r^2$ {r_value:.3f}'
+
+    m, b = np.polyfit(x, y, 1)
+    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
+    ax.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
+
+    if var:
+        ax.legend(title=f'{var}')
+    else:
+        ax.legend()
+    # plt.show()
+
+
+# Scatter & Regression
+def history_scatter(df, ratio, z_thresh=False):
+    if z_thresh:
+        df = df[~is_outlier(df[ratio], thresh=z_thresh)]
+
+    df = df[df.replace([np.inf, -np.inf], np.nan).notnull().all(axis=1)]
+    # reorder colors for better image
+    colors_history = {
+        'reference': 'blue',
+        'timber_operation': 'red',
+        'ca_addition': 'orange',
+    }
+
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel('log(Q) L/s', fontsize=16)
+    ax.set_ylabel(f'{ratio}', fontsize=16)
+    plt.suptitle(f'{ratio} Ratio by log(Q)', fontsize=16)
+    plt.title('points with Z score greater than 3 removed', fontsize=10)
+
+    # adding regression lines
+    for history in colors_history.keys():
+        this = df[df['history'] == history]
+        x = this['log_q']
+        y = this[ratio]
+
+        # regression stats
+        gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+        entry = f'{history}   $r^2$ {r_value:.3f}'
+
+        # scatter
+        color = colors_history[history]
+        ax.scatter(x, y, c=color, label=entry, alpha=0.25)
+
+
+        m, b = np.polyfit(x, y, 1)
+        X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
+        ax.plot(X_plot, m*X_plot + b, '-', color=color)
+
+    # overall regression
+    x = df['log_q']
+    y = df[ratio]
+
+    gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    entry = f'overall   $r^2$ {r_value:.3f}'
+
+    m, b = np.polyfit(x, y, 1)
+    X_plot = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], 100)
+    ax.plot(X_plot, m*X_plot + b, '--', color='gray', label=entry)
+    ax.legend(title="Experimental History")
+
+    plt.show()
+
+# scatter by history
+history_scatter(hbef_ratio, 'CaMg', z_thresh=3)
+history_scatter(hbef_ratio, 'CaSi', z_thresh=3)
+history_scatter(hbef_ratio, 'CaNa', z_thresh=3)
+
+# scatter by year
+# all sites
+variable_scatter(hbef_ratio, 'Ca', 'SiO2_Si', 'decade', log_x=True, log_y=True, regress=True)
+variable_scatter(hbef_ratio, 'Ca', 'Mg', 'decade', log_x=True, log_y=True, regress=True)
+variable_scatter(hbef_ratio, 'Ca', 'Na', 'decade', log_x=True, log_y=True, regress=True)
+
+# deforested
+# make 'water decades' using annual means data
+# W5
+decader(hbef_5, 'water_year')
+variable_scatter(hbef_5, 'Ca', 'SiO2_Si', 'decade', log_x=True, log_y=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_5, 'Ca', 'Mg', 'decade', log_x=True, log_y=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_5, 'Ca', 'Na', 'decade', log_x=True, log_y=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+
+
+variable_scatter(hbef_5, 'discharge', 'CaSi', 'decade', title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_5, 'discharge', 'CaMg', 'decade', title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_5, 'discharge', 'CaNa', 'decade', title_add="Watershed 5, clearcut and herbicide 1983-1984")
+
+# W2
+decader(hbef_2, 'water_year')
+variable_scatter(hbef_2, 'Ca', 'SiO2_Si', 'decade', log_x=True, log_y=True, title_add="Watershed 2, devegetated 1965-1967")
+variable_scatter(hbef_2, 'Ca', 'Mg', 'decade', log_x=True, log_y=True, title_add="Watershed 2, devegetated 1965-1967")
+variable_scatter(hbef_2, 'Ca', 'Na', 'decade', log_x=True, log_y=True, title_add="Watershed 2, devegetated 1965-1967")
+
+
+variable_scatter(hbef_2, 'discharge', 'CaSi', 'decade', title_add="Watershed 2, devegetated 1965-1967")
+variable_scatter(hbef_2, 'discharge', 'CaMg', 'decade', title_add="Watershed 2, devegetated 1965-1967")
+variable_scatter(hbef_2, 'discharge', 'CaNa', 'decade', title_add="Watershed 2, devegetated 1965-1967")
+
+# W6
+decader(hbef_6, 'water_year')
+variable_scatter(hbef_6, 'Ca', 'SiO2_Si', 'decade', log_x=True, log_y=True, title_add="Reference Watershed")
+variable_scatter(hbef_6, 'Ca', 'Mg', 'decade', log_x=True, log_y=True, title_add="Reference Watershed")
+variable_scatter(hbef_6, 'Ca', 'Na', 'decade', log_x=True, log_y=True, title_add="Reference Watershed")
+
+
+variable_scatter(hbef_6, 'discharge', 'CaSi', 'decade', title_add="Reference Watershed")
+variable_scatter(hbef_6, 'discharge', 'CaMg', 'decade', title_add="Reference Watershed")
+variable_scatter(hbef_6, 'discharge', 'CaNa', 'decade', title_add="Reference Watershed")
+
+# using all data points
+# W5
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'Ca', 'SiO2_Si', 'decade', log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'Ca', 'Mg', 'decade', regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'Ca', 'Na', 'decade', regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'SiO2_Si', 'decade', log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'Mg', 'decade',  log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'Na', 'decade',  log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'CaSi', 'decade', log_x=True, log_y=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'CaMg', 'decade',  log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+variable_scatter(hbef_ratio[hbef_ratio['site_code'].isin(['w5'])], 'discharge', 'CaNa', 'decade',  log_x=True, regress=True, title_add="Watershed 5, clearcut and herbicide 1983-1984")
+
+
+# megafacet
+# element by flow across elements
+hbef = hbef_ratio[hbef_ratio['site_code'].isin(['w5', 'w2', 'w6'])]
+cols = hbef.site_code.value_counts().shape[0]
+
+
+elements = ['Ca', 'Na', 'Mg']
+rows = len(elements)
+
+fig, ax = plt.subplots(rows, cols, figsize=(10, 10))
+
+for index, element in enumerate(elements):
+    for i, site in enumerate(hbef.site_code.value_counts().index.values):
+
+        site_label = {
+            'w6': '${reference}$',
+            'w2': '${devegetated, 1965-67}$',
+            'w5': '${clear cut, 1983-84}$'
+        }
+
+        this_label = site_label[site]
+        site_bold = f"$\\bf{site}$"
+
+        df = hbef[hbef['site_code'] == site]
+
+        x_col = 'scale_log_q'
+        y_col = element
+
+        ax[index][i].axes.yaxis.set_visible(False)
+        ax[index][i].axes.xaxis.set_visible(False)
+
+        if index ==0:
+            ax[index][i].set_title(f'{site_bold}\n{this_label}', fontsize=10, y=1)
+        if i == 0:
+            # concentration
+            ax[index][i].set_ylabel(f'[{y_col}]', fontsize=12)
+
+            ax[index][i].axes.yaxis.set_visible(True)
+        if index == len(elements) -1 and i == 1:
+            ax[index][i].set_xlabel("$log(Q)_{scaled}$", fontsize = 12)
+
+
+        ax[index][i].set_ylim([-0.25, 6])
+
+        var_list = df["decade"].unique()
+        var_list_col = sns.color_palette("flare", len(var_list))
+
+        # var_list
+        for var_index, item in enumerate(var_list):
+            this = df[df["decade"] == item]
+            color = var_list_col[var_index]
+
+            x = this[x_col]
+            y = this[y_col]
+
+            # regression stats
+            gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+            entry = f'{item}   $r^2$ {r_value:.3f}'
+            im1 = ax[index][i].scatter(x, y, c=color, label=entry, alpha=0.25)
+
+            m, b = np.polyfit(x, y, 1)
+            X_plot = np.linspace(ax[index][i].get_xlim()[0], ax[index][i].get_xlim()[1], 100)
+            ax[index][i].plot(X_plot, m*X_plot + b, '-', color=color)
+
+        if index == len(elements)-1:
+            ax[index][i].axes.xaxis.set_visible(True)
+
+norm = plt.Normalize(hbef.year.min(), hbef.year.max())
+sm = plt.cm.ScalarMappable(cmap="flare", norm=norm)
+fig.suptitle("Element Concentration by Site in Hubbard Brook\n1963-2020, interpolated dataset", x=0.42, y=.98)
+sm.set_array([])
+plt.colorbar(sm, ax=ax, shrink=0.9, aspect=38)
+plt.show()
+
+
+# element flux
+fluxes = ['Ca_flux', 'Na_flux', 'Mg_flux', 'Cl_flux', 'K_flux']
+rows = len(fluxes)
+
+fig, ax = plt.subplots(rows, cols, figsize=(8, 8))
+
+for index, flux in enumerate(fluxes):
+    for i, site in enumerate(hbef.site_code.value_counts().index.values):
+        df = hbef[hbef['site_code'] == site]
+
+        site_label = {
+            'w6': '${reference}$',
+            'w2': '${devegetated, 1965-67}$',
+            'w5': '${clear cut, 1983-84}$'
+        }
+
+        this_label = site_label[site]
+        site_bold = f"$\\bf{site}$"
+
+        x_col = 'q_scaled'
+        y_col = flux
+        y_name = y_col.split('_')[0]
+
+        ax[index][i].axes.yaxis.set_visible(False)
+        ax[index][i].axes.xaxis.set_visible(False)
+
+        if index ==0:
+            ax[index][i].set_title(f'{site_bold}\n{this_label}', fontsize=10, y=1)
+        if i == 0:
+            ax[index][i].set_ylabel(f'${y_name}$ ', fontsize=12)
+
+            ax[index][i].axes.yaxis.set_visible(True)
+        if index == len(fluxes) -1 and i == 1:
+            ax[index][i].set_xlabel("$Q_{scaled}$", fontsize = 12)
+
+        # ax[index][i].set_ylim([-0.25, 6])
+
+        var_list = df["decade"].unique()
+        var_list_col = sns.color_palette("flare", len(var_list))
+
+        # var_list
+        for var_index, item in enumerate(var_list):
+            this = df[df["decade"] == item]
+            color = var_list_col[var_index]
+
+            x = this[x_col]
+            y = this[y_col]
+
+            # regression stats
+            gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+            entry = f'{item}   $r^2$ {r_value:.3f}'
+            im1 = ax[index][i].scatter(x, y, c=color, label=entry, alpha=0.25)
+
+            m, b = np.polyfit(x, y, 1)
+            X_plot = np.linspace(ax[index][i].get_xlim()[0], ax[index][i].get_xlim()[1], 100)
+            ax[index][i].plot(X_plot, m*X_plot + b, '-', color=color)
+
+        if index == len(fluxes)-1:
+            ax[index][i].axes.xaxis.set_visible(True)
+
+norm = plt.Normalize(hbef.year.min(), hbef.year.max())
+sm = plt.cm.ScalarMappable(cmap="flare", norm=norm)
+fig.suptitle("Site Element Flux by Watershed Scaled Discharge in Hubbard Brook", x=0.42, y=.98)
+# fig.text("${1963-2020}$, interpolated data included", s=0.42, y=.96)
+sm.set_array([])
+plt.colorbar(sm, ax=ax, shrink=0.9, aspect=38)
+plt.show()
+
+# element:ratios by flow across elements
+element_ratio_ratios = ['CaMg', 'CaNa', 'CaMg']
+rows = len(element_ratio_ratios)
+
+fig, ax = plt.subplots(rows, cols, figsize=(10, 10))
+
+for index, element_ratio in enumerate(element_ratio_ratios):
+    for i, site in enumerate(hbef.site_code.value_counts().index.values):
+
+        site_label = {
+            'w6': '${reference}$',
+            'w2': '${devegetated, 1965-67}$',
+            'w5': '${clear cut, 1983-84}$'
+        }
+
+        this_label = site_label[site]
+        site_bold = f"$\\bf{site}$"
+
+        df = hbef[hbef['site_code'] == site]
+
+        x_col = 'scale_log_q'
+        y_col = element_ratio
+
+        ax[index][i].axes.yaxis.set_visible(False)
+        ax[index][i].axes.xaxis.set_visible(False)
+
+        if index ==0:
+            ax[index][i].set_title(f'{site_bold}\n{this_label}', fontsize=10, y=1)
+        if i == 0:
+            # ratio
+            ratio_string = y_col[:2] + ':' + y_col[2:]
+            ax[index][i].set_ylabel(f'{ratio_string}', fontsize=12)
+
+            ax[index][i].axes.yaxis.set_visible(True)
+        if index == len(element_ratio_ratios) -1 and i == 1:
+            ax[index][i].set_xlabel("$log(Q)_{scaled}$", fontsize = 12)
+
+        # y lim
+        # ax[index][i].set_ylim([-0.25, 6])
+
+        var_list = df["decade"].unique()
+        var_list_col = sns.color_palette("flare", len(var_list))
+
+        # var_list
+        for var_index, item in enumerate(var_list):
+            this = df[df["decade"] == item]
+            color = var_list_col[var_index]
+
+            x = this[x_col]
+            y = this[y_col]
+
+            # regression stats
+            gradient, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+            entry = f'{item}   $r^2$ {r_value:.3f}'
+            im1 = ax[index][i].scatter(x, y, c=color, label=entry, alpha=0.25)
+
+            m, b = np.polyfit(x, y, 1)
+            X_plot = np.linspace(ax[index][i].get_xlim()[0], ax[index][i].get_xlim()[1], 100)
+            ax[index][i].plot(X_plot, m*X_plot + b, '-', color=color)
+
+        if index == len(element_ratio_ratios)-1:
+            ax[index][i].axes.xaxis.set_visible(True)
+
+norm = plt.Normalize(hbef.year.min(), hbef.year.max())
+sm = plt.cm.ScalarMappable(cmap="flare", norm=norm)
+fig.suptitle("Calcium:Element Ratios by Site in Hubbard Brook\n1963-2020, interpolated dataset", x=0.42, y=.98)
+sm.set_array([])
+plt.colorbar(sm, ax=ax, shrink=0.9, aspect=38)
+plt.show()
+
+# Time Series
+# annual flux time series,
+hbef_yield = hbef.groupby(['water_year', 'site_code']).sum().reset_index()
+# and, annual difference in yield for each element
+# calculate difference w2-ref yield, w5-ref yield
+hbef_yield['Ca_ref'] = 0
+hbef_yield.set_index('water_year', 'site_code')
+
+calcium_ref = {
+    'w5': [],
+    'w2': []
+}
+
+# for element in fluxes:
+ca_ref = []
+for element in fluxes:
+    element_ref_list = []
+    for index, row in hbef_yield.iterrows():
+        if row['site_code'] == 'w5' or row['site_code'] == 'w2':
+            year = row['water_year']
+            site = row['site_code']
+            val = row[element]
+            ref = hbef_yield[hbef_yield['water_year'] == year][hbef_yield['site_code']== 'w6'][element].values[0]
+            ca_ref_val = val - ref
+            element_ref_list.append(ca_ref_val)
+        # ca_ref.append([year, site, ca_ref_val])
+        else:
+            element_ref_list.append(0)
+
+    ele_col = element+'_ref'
+    hbef_yield[ele_col] = element_ref_list
+
+
+
+
+
+# and, total record difference in yield for each element
+
+# facet of timeseries
+# this shows a timersies of annual flux sums, with a
+# gray line showing the difference between experimental annual flux and reference flux
+#
+fluxes = ['Ca_flux', 'Na_flux', 'Mg_flux', 'Cl_flux', 'K_flux']
+cols = hbef_yield.site_code.value_counts().shape[0]
+rows = len(fluxes)
+
+
+
+site_col = {
+    'w5':['-', 'red'],
+    'w2':['-', 'red'],
+    'w6':['-', 'blue']
+}
+
+sites = ['w6', 'w5', 'w2']
+
+fig, ax = plt.subplots(rows, cols, figsize=(10, 10))
+
+for index, element_yield in enumerate(fluxes):
+    for i, site in enumerate(sites):
+        x = hbef_yield[hbef_yield['site_code']==site]['water_year']
+        y = hbef_yield[hbef_yield['site_code']==site][element_yield]
+        ax[index][i].plot(x, y, linewidth=1, color=site_col[site][1], linestyle=site_col[site][0], label=f'{site} Annual {element_yield}')
+
+        site_bold = f"$\\bf{site}$"
+
+        ax[index][i].axes.yaxis.set_visible(False)
+        ax[index][i].axes.xaxis.set_visible(False)
+
+
+        if index == 0:
+            ax[index][i].set_title(f'{site_bold}', fontsize=12, y=1)
+        if i == 0:
+            element_string = element_yield.split('_')[0]
+            ax[index][i].set_ylabel(f'{element_string}', fontsize=12)
+            ax[index][i].axes.yaxis.set_visible(True)
+
+        fluxref = element_yield+'_ref'
+
+        if site == 'w2':
+            ref = hbef_yield[hbef_yield['site_code']==site][fluxref]
+            ax[index][i].axvspan(1965, 1967, alpha=0.2,
+                                 color='gray',
+                                 label='W2 devegetated')
+            ax[index][i].plot(x, ref, linewidth=1, color='gray',
+                              linestyle=site_col[site][0],
+                              label=f'difference annual yield, {site} and reference',
+                              alpha=0.5)
+        elif site=='w5':
+            ref = hbef_yield[hbef_yield['site_code']==site][fluxref]
+            ax[index][i].axvspan(1983, 1984, alpha=0.2, color='lightgray', label='W5 clearcut and herbicide')
+            ax[index][i].plot(x, ref, linewidth=1, color='gray',
+                              linestyle=site_col[site][0],
+                              label=f'difference annual yield, {site} and reference',
+                              alpha=0.5)
+
+        # ax[index][i].set_ylim([0, 3000])
+        if index == 0:
+            ax[index][i].set_ylim([0, 80])
+        elif index == 1:
+            ax[index][i].set_ylim([0, 20])
+        elif index == 2:
+            ax[index][i].set_ylim([0, 20])
+        elif index == 3:
+            ax[index][i].set_ylim([0, 15])
+        elif index == 4:
+            ax[index][i].set_ylim([0, 40])
+
+
+        if index == len(fluxes)-1:
+            ax[index][i].axes.xaxis.set_visible(True)
+
+fig.suptitle("Element Annual Yields Over Time in Hubbard Brook\n1963-2020, interpolated dataset", x=0.42, y=.98)
+from matplotlib.lines import Line2D
+colors = ['blue', 'red']
+lines = [Line2D([0], [0], color=c, linewidth=1, linestyle='-') for c in colors]
+labels = ['W6, biogeochemical reference', 'W2 and W5, experimental']
+fig.legend(lines, labels, loc='upper right')
+plt.show()
+
+# now we explore 'total fluxes'
+# we will sum all annual fluxes, and display a pie chart of sires with a bubble
+# and number sized to total export since 1963
+# cold do a nested pie chart with each circle being a decade, and the proportions of export
+# of each site shown, with total export values
+decader(hbef_yield, 'water_year')
+
+hbef_decade = hbef_decade.reset_index()
+fig1, ax1 = plt.subplots()
+
+
+x = hbef_decade[hbef_decade['site_code']=='w5']['decade']
+y = hbef_decade[hbef_decade['site_code']=='w5']['Ca_flux']
+
+ax1.pie(y,labels=x, startangle=90)
+
+ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+plt.show()
+
+# stacked bar chart
+# plot bars in stack manner
+x = hbef_decade[hbef_decade['site_code']=='w5']['decade'].unique()
+hbef_decs = hbef_decade[['decade', 'site_code', 'Ca_flux']]
+
+df1 = (hbef_decs.pivot_table(index='site_code',
+                      columns='decade',
+                      values='Ca_flux'))
+
+df1.loc[:,["1960's", "1970's", "1980's", "1990's", "2000's", "2010's", "2020's"]].plot.bar(stacked=True)
+
+#
+fig, ax = plt.subplots()
+
+ax.bar(df1.index, df1["1960's"], colors=var_list_col)
