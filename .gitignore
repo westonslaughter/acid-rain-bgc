@@ -1,11 +1,18 @@
+# standard omissions
 .DS_Store
 .idea
 *.log
 tmp/
+
+# omit data and static files
 config.json
 spatial/
 macrosheds_dataset_v1/
 *.csv
 /img
+/images
+
+# omit old files
 relic.R
 relic.py
+/vault

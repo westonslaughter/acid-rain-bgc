@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-03-03 Thu 13:02 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hubbard Brook: Deforestation and Element Dynamics Over 50 Years</title>
+<meta name="author" content="Weston Slaughter" />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+</style>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Hubbard Brook: Deforestation and Element Dynamics Over 50 Years</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orge3da0c3">1. are there changes in Ca:Si, Ca:Mg, Ca:Na ratios with flow?</a>
+<ul>
+<li><a href="#org4bce6ed">1.1. Q:C</a></li>
+<li><a href="#org255302a">1.2. Q:Flux</a></li>
+<li><a href="#orga0b4902">1.3. Q:Ratio</a></li>
+</ul>
+</li>
+<li><a href="#org0a824e0">2. how do element:Q and Q:Ratio relationships vary by decades since harvest?</a>
+<ul>
+<li><a href="#orgdb088b9">2.1. Q:Flux</a></li>
+<li><a href="#org4f8e6a9">2.2. Q:C</a></li>
+</ul>
+</li>
+<li><a href="#orgcae1479">3. calculate the total difference in yield between the deforested watersheds, and watershed 6 by year</a>
+<ul>
+<li><a href="#org03b3566">3.1. stacked bar chart of total flux by decade</a></li>
+<li><a href="#orga14a14e">3.2. stacked bar chart of mean element ratios by decade</a></li>
+<li><a href="#org71f9942">3.3. overall yield of elements over entire record</a></li>
+</ul>
+</li>
+<li><a href="#orgaae94ac">4. what is the difference in annual yield between forested and deforested sites?</a>
+<ul>
+<li><a href="#orgba316e1">4.1. annual sum of element flux time series</a></li>
+</ul>
+</li>
+<li><a href="#orgc82d512">5. flux ratios across decades in forested vs unforested</a>
+<ul>
+<li><a href="#orgd9f7968">5.1. flux ratios by element</a></li>
+<li><a href="#org1cf0701">5.2. concentration ratios by element</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<p>
+This portfolio of data visualizations explores element dynamics over three watersheds in Hubbard Brook Experimental Forest. We focus here on:
+</p>
+
+<ul class="org-ul">
+<li><b>Watershed 2</b>: experimentally devegetated from 1965-1967</li>
+<li><b>Watershed 5</b>: clearcut and herbicide treatment from 1983-1984</li>
+<li><b>Watershed 6</b>: biogeochemical reference watershed</li>
+</ul>
+
+<p>
+a guiding question of this portfolio is: <b>are there changes in element dynamics between forested and deforested watersheds?</b> this question is explored in every single plot, as almost all the visualizations below seperate the three watersheds into individual plots.
+</p>
+
+<p>
+another guiding question is <b>how have these lement dynamics changed over time?</b> this question too is explored in every visualization below, as the decade, or, amount of decades since harvest, is visualized on a data point through color.
+</p>
+
+<div id="outline-container-orge3da0c3" class="outline-2">
+<h2 id="orge3da0c3"><span class="section-number-2">1.</span> are there changes in Ca:Si, Ca:Mg, Ca:Na ratios with flow?</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+below we explore <b>how element Concentration, Flux, and Ratios (Y-axis) vary with flow (X-axis)</b>. In each visualization here, each data point is colored by the decade in which it was taken, from the 1960&rsquo;s (light orange) to 2020 (dark purple). Regression lines are fit by each decade, and colored accordingly.
+</p>
+
+<p>
+The data used for the plots below is the entire interpolated dataset.
+</p>
+</div>
+
+<div id="outline-container-org4bce6ed" class="outline-3">
+<h3 id="org4bce6ed"><span class="section-number-3">1.1.</span> Q:C</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<div id="org5542a1f" class="figure">
+<p><img src="images/c_q.png" alt="c_q.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org255302a" class="outline-3">
+<h3 id="org255302a"><span class="section-number-3">1.2.</span> Q:Flux</h3>
+<div class="outline-text-3" id="text-1-2">
+
+<div id="orgde1c5f5" class="figure">
+<p><img src="images/flux_q.png" alt="flux_q.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga0b4902" class="outline-3">
+<h3 id="orga0b4902"><span class="section-number-3">1.3.</span> Q:Ratio</h3>
+<div class="outline-text-3" id="text-1-3">
+
+<div id="orgbb06359" class="figure">
+<p><img src="images/xyz_q.png" alt="xyz_q.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org0a824e0" class="outline-2">
+<h2 id="org0a824e0"><span class="section-number-2">2.</span> how do element:Q and Q:Ratio relationships vary by decades since harvest?</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+below we explore <b>how element Concentration and Flux (Y-axis) vary with flow (X-axis)</b>.
+</p>
+
+<p>
+Decades since harvest are still colored from Orange (0 decades since harvest) to purple (maximum decades since harvest), however here pre-harvest observations are in light blue.
+</p>
+</div>
+
+<div id="outline-container-orgdb088b9" class="outline-3">
+<h3 id="orgdb088b9"><span class="section-number-3">2.1.</span> Q:Flux</h3>
+<div class="outline-text-3" id="text-2-1">
+
+<div id="orgd60268b" class="figure">
+<p><img src="images/flux_decades_q.png" alt="flux_decades_q.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4f8e6a9" class="outline-3">
+<h3 id="org4f8e6a9"><span class="section-number-3">2.2.</span> Q:C</h3>
+<div class="outline-text-3" id="text-2-2">
+
+<div id="orgd412d2a" class="figure">
+<p><img src="images/concentration_decades_q.png" alt="concentration_decades_q.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgcae1479" class="outline-2">
+<h2 id="orgcae1479"><span class="section-number-2">3.</span> calculate the total difference in yield between the deforested watersheds, and watershed 6 by year</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+<div id="outline-container-org03b3566" class="outline-3">
+<h3 id="org03b3566"><span class="section-number-3">3.1.</span> stacked bar chart of total flux by decade</h3>
+<div class="outline-text-3" id="text-3-1">
+
+<div id="orgbdc7bf3" class="figure">
+<p><img src="images/decade_stack.png" alt="decade_stack.png" />
+</p>
+</div>
+
+
+<p>
+the stacked bar chart above compares the total element yield between decades for each site, calculated as the sum of all daily flux values by decade, from the interpolated dataset.
+</p>
+
+<p>
+the &rsquo;stacked&rsquo; bar chart show each decades total yield superimposed onto each other, colored by decade
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga14a14e" class="outline-3">
+<h3 id="orga14a14e"><span class="section-number-3">3.2.</span> stacked bar chart of mean element ratios by decade</h3>
+<div class="outline-text-3" id="text-3-2">
+
+<div id="orgfef5f9f" class="figure">
+<p><img src="images/mean_element_stack.png" alt="mean_element_stack.png" />
+</p>
+</div>
+
+
+<p>
+the stacked bar chart above compares the mean element ratio of each decade at each site, calculated from the interpolated dataset.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org71f9942" class="outline-3">
+<h3 id="org71f9942"><span class="section-number-3">3.3.</span> overall yield of elements over entire record</h3>
+<div class="outline-text-3" id="text-3-3">
+
+<div id="orgb7556a7" class="figure">
+<p><img src="images/all_yield_stack.png" alt="all_yield_stack.png" />
+</p>
+</div>
+
+
+<p>
+this bar chart shows the overall yield, in kg/ha, for each site.
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgaae94ac" class="outline-2">
+<h2 id="orgaae94ac"><span class="section-number-2">4.</span> what is the difference in annual yield between forested and deforested sites?</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+the following time series shows the annual element yields of Watersheds 5 and 2, with the annual yield of Watershed 6 subtracted, for each of the elements over the course of 1963-2020. <b>The grey line at y=0 shows where there is no difference between the experimental watershed and the reference watershed.</b>
+</p>
+</div>
+
+<div id="outline-container-orgba316e1" class="outline-3">
+<h3 id="orgba316e1"><span class="section-number-3">4.1.</span> annual sum of element flux time series</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+this chart shows the <b>difference in the sums of annual flux</b> between experimental sites (Watersheds 2 and 5) and Watershed 6. The red line is the calculated difference.
+</p>
+
+
+<div id="orgb1796d8" class="figure">
+<p><img src="images/yield_diff_timeseries.png" alt="yield_diff_timeseries.png" />
+</p>
+</div>
+
+<p>
+this chart shows the <b>difference in the means of annual flux</b> between experimental sites (Watersheds 2 and 5) and Watershed 6. The red line is the calculated difference.
+</p>
+
+
+<div id="org04d6f20" class="figure">
+<p><img src="images/yield_Mean_diff_timeseries.png" alt="yield_Mean_diff_timeseries.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgc82d512" class="outline-2">
+<h2 id="orgc82d512"><span class="section-number-2">5.</span> flux ratios across decades in forested vs unforested</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+the following plots show the ratios of different elements (Flux and Concentration) to each other throughout the interpolated record at Hubbard Brook. The lower left triangle of relationships shows an <b>experimental watershed in warm colors</b>, and the upper right triangle shows the <b>reference watershed in cool colors</b>.
+</p>
+</div>
+
+<div id="outline-container-orgd9f7968" class="outline-3">
+<h3 id="orgd9f7968"><span class="section-number-3">5.1.</span> flux ratios by element</h3>
+<div class="outline-text-3" id="text-5-1">
+<p>
+Watershed 5 (hot colors) against Watershed 6 (cool colors)
+</p>
+
+<div id="orga7fe460" class="figure">
+<p><img src="images/w5_flux_ratios.png" alt="w5_flux_ratios.png" />
+</p>
+</div>
+
+<p>
+Watershed 2 (hot colors) against Watershed 6 (cool colors)
+</p>
+
+<div id="org70ff794" class="figure">
+<p><img src="images/w2_flux_ratios.png" alt="w2_flux_ratios.png" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1cf0701" class="outline-3">
+<h3 id="org1cf0701"><span class="section-number-3">5.2.</span> concentration ratios by element</h3>
+<div class="outline-text-3" id="text-5-2">
+<p>
+Watershed 5 (hot colors) against Watershed 6 (cool colors)
+</p>
+
+<div id="orgd297479" class="figure">
+<p><img src="images/w5_concentration_ratios.png" alt="w5_concentration_ratios.png" />
+</p>
+</div>
+
+<p>
+Watershed 2 (hot colors) against Watershed 6 (cool colors)
+</p>
+
+<div id="orgb477316" class="figure">
+<p><img src="images/w2_concentration_ratios.png" alt="w2_concentration_ratios.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Weston Slaughter</p>
+<p class="date">Created: 2022-03-03 Thu 13:02</p>
+</div>
+</body>
+</html>

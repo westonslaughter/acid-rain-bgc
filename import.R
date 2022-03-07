@@ -11,13 +11,17 @@ library(dygraphs)
 library(here)
 library(stringr)
 
-source("project_helpers.R")
+source("./vault/project_helpers.R")
 
 ## Watershed Attribute Groupings
 ws_summaries <- read.csv("src/spatial/watershed_summaries.csv")
 
 #### Data read and munging ####
-var_interest <- c('NO3_N', 'NO3_NO2_N', 'Ca', 'Cl', 'Mg', 'discharge', 'Na', 'pH', 'SiO2_Si', 'SiO3_Si', 'Si', "SiO2", 'SiO3', 'K', 'Mg')
+var_interest <- c('NO3_N', 'NO3_NO2_N', 'Ca', 'Cl', 'Mg',
+                  'discharge', 'Na', 'pH', 'SiO2_Si',
+                  'SiO3_Si', 'Si', "SiO2", 'SiO3',
+                  'K', 'Mg', 'SO4')
+
 chem_fils <- list.files("src/macrosheds_dataset_v1/lter/hbef/derived/stream_chemistry__ms006/", full.names = TRUE)
 q_fils <- list.files("src/macrosheds_dataset_v1/lter/hbef/derived/discharge__ms003/", full.names = TRUE)
 flux_fils <- list.files("src/macrosheds_dataset_v1/lter/hbef/derived/stream_flux_inst_scaled__ms001/", full.names = TRUE)
@@ -74,7 +78,7 @@ hbef <- hbef %>%
 
 hbef_elements <- hbef[c("datetime", "year", "month", "site_code", "discharge", "q_scaled",
                         "Ca", "Ca_flux", "SiO2_Si", "SiO2_Si_flux","Mg", "Mg_flux", "Cl", "Cl_flux",
-                        "Na", "Na_flux", "K", "K_flux")]
+                        "Na", "Na_flux", "K", "K_flux", "SO4_S", "SO4_S_flux")]
 
 write.csv(hbef, "hbef_interp.csv")
 write.csv(hbef_elements, "hbef_elements_interp.csv")

@@ -1,7 +1,0 @@
-#+TITLE: Deforestation
-
-* autoregressive model (temporal correction)
-** use trigonometric functions to correct for seasonality (can figure this out later)
-** workflow suggestion:
-*** simulate the data how I think it was generated, fake mean of deforest vs forest, fake flow
-*** pull values from this dataset

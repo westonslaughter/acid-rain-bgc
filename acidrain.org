@@ -1,0 +1,18 @@
+#+TITLE: Acidrain
+
+* Summary
+this project looks into element dynamics in the Hubbard Brook experimental forest in New Hampshire, particularly as these dynamics relate to site histories of experimental deforestation.
+
+* TODO questions [0/5] :acidrain:
+1. [ ] are there changes in Ca:Element ratios with flow?
+2. [ ] do these ratios and ratio:Q relationships differ between deforested and forested watersheds?
+3. [ ] have they changed over time?
+4. [ ] calculate the total difference in yield between the deforested watersheds and watershed 6
+   A. for each element in [Ca, Si, Na, Cl, K]
+      a. by year
+      b. entire record
+5. [ ] look at the ratios above for all possible molar ratios
+   A. average annual VWC
+   B. total annual flux
+6. [ ] C:Q and Ratio:Q relationships by decades since harvest
+
