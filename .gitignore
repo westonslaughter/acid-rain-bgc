@@ -9,6 +9,7 @@ config.json
 spatial/
 macrosheds_dataset_v1/
 *.csv
+*.zip
 /img
 /images
 

@@ -1,9 +1,12 @@
-#+TITLE: Acidrain
+#+TITLE: acidrain-deforestation
 
 * Summary
 this project looks into element dynamics in the Hubbard Brook experimental forest in New Hampshire, particularly as these dynamics relate to site histories of experimental deforestation.
 
-* TODO questions [0/5] :acidrain:
+* TODO questions [0/6] :acidrain:
+
+questions below addressed in the first portfolio
+
 1. [ ] are there changes in Ca:Element ratios with flow?
 2. [ ] do these ratios and ratio:Q relationships differ between deforested and forested watersheds?
 3. [ ] have they changed over time?
@@ -16,3 +19,12 @@ this project looks into element dynamics in the Hubbard Brook experimental fores
    B. total annual flux
 6. [ ] C:Q and Ratio:Q relationships by decades since harvest
 
+* TODO actions
+** [X] first portfolio drafted and sent
+** first portfolio further edits
+- redo flux ratio plots with VWC
+- redo stacked bar as cumulative, and reverrsed time
+- redo with exploring regression r^2 values
+** second portfolio
+- more targeted base cation vs base anion analyses
+- more sit-with-data and x-ref of element stuff to think about real meanings of results
